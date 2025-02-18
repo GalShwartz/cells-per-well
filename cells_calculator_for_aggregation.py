@@ -23,13 +23,27 @@ def cells_calculation(cells_counts, dilution, total_cells_per_uwell, uwell_per_w
         cells_per_well = total_cells_per_uwell * uwell_per_well * cell_type_ratio
         total_num_of_cells = cells_per_well * (num_of_wells + 2)  # Extra for pipetting errors
         volume_to_add = total_num_of_cells / cells_per_ml
-        volumes[cell_type] = volume_to_add * 1000  # Convert to µL
+        volumes[cell_type] = round(volume_to_add * 1000, 2)  # Convert to µL and round output
     
-    media_vol = (num_of_wells + 2) * volume_per_well - sum(volumes.values())
-    roki_volume = ((media_vol + sum(volumes.values())) / 1000) * 2
-    total_volume = media_vol + sum(volumes.values())
+    media_vol = round((num_of_wells + 2) * volume_per_well - sum(volumes.values()), 2)
+    roki_volume = round(((media_vol + sum(volumes.values())) / 1000) * 2, 2)
+    total_volume = round(media_vol + sum(volumes.values()), 2)
     
     return volumes, media_vol, roki_volume, total_volume
+
+def update_entries():
+    selected_cell_types = cell_type_var.get()
+    selected_ratio = CELL_RATIOS[selected_cell_types]
+    sorter_used = sorter_var.get()
+    
+    for cell, entry in entries.items():
+        if cell in selected_ratio.keys():
+            entry.config(state="normal")
+            label_text = f"{cell} Cells per mL" if sorter_used else f"{cell} number in 4 squares"
+            entry_labels[cell].config(text=label_text)
+        else:
+            entry.config(state="disabled")
+            entry.delete(0, tk.END)  # Clear disabled fields
 
 def calculate():
     try:
@@ -69,7 +83,7 @@ def export_to_csv():
 # Create GUI window
 root = tk.Tk()
 root.title("Cell Volume Calculator")
-root.geometry("500x700")
+root.geometry("550x700")
 
 # Input fields
 frame = ttk.Frame(root)
@@ -77,24 +91,19 @@ frame.pack(pady=10)
 
 ttk.Label(frame, text="Select Cell Types").grid(row=0, column=0)
 cell_type_var = tk.StringVar(value="WT, RCL, BAP(J)")
-cell_type_menu = ttk.Combobox(frame, textvariable=cell_type_var, values=list(CELL_RATIOS.keys()))
+cell_type_menu = ttk.Combobox(frame, textvariable=cell_type_var, values=list(CELL_RATIOS.keys()), width=30)
 cell_type_menu.grid(row=0, column=1)
+cell_type_menu.bind("<<ComboboxSelected>>", lambda e: update_entries())
 
 entries = {}
-
+entry_labels = {}
 sorter_var = tk.BooleanVar()
-sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=sorter_var)
+sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=sorter_var, command=update_entries)
 sorter_check.grid(row=11, columnspan=2)
-sorter_clicked = sorter_var.get()
 
 for idx, cell in enumerate(CELL_RATIOS["WT, RCL, BAP(J), iTEAD4, Rapamycin"].keys()):
-
-    if sorter_clicked == True:
-        ttk.Label(frame, text=f"{cell} Cells per mL").grid(row=idx+1, column=0)
-    else:
-        ttk.Label(frame, text=f"{cell} number in 4 squares").grid(row=idx+1, column=0)
-        print(sorter_clicked)
-
+    entry_labels[cell] = ttk.Label(frame, text=f"{cell} number in 4 squares")
+    entry_labels[cell].grid(row=idx+1, column=0)
     entries[cell] = ttk.Entry(frame)
     entries[cell].grid(row=idx+1, column=1)
 
@@ -122,10 +131,6 @@ ttk.Label(frame, text="Well's volume").grid(row=10, column=0)
 volume_per_well_entry = ttk.Entry(frame)
 volume_per_well_entry.grid(row=10, column=1)
 volume_per_well_entry.insert(0, "500")
-
-#sorter_var = tk.BooleanVar()
-#sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=sorter_var)
-#sorter_check.grid(row=11, columnspan=2)
 
 ttk.Button(root, text="Calculate", command=calculate).pack(pady=10)
 ttk.Button(root, text="Export to CSV", command=export_to_csv).pack(pady=5)
