@@ -83,17 +83,17 @@ cell_type_menu.grid(row=0, column=1)
 entries = {}
 
 sorter_var = tk.BooleanVar()
-sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=sorter_var)
+sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=sorter_var, command=cell_sorter)
 sorter_check.grid(row=11, columnspan=2)
 sorter_clicked = sorter_var.get()
 
 for idx, cell in enumerate(CELL_RATIOS["WT, RCL, BAP(J), iTEAD4, Rapamycin"].keys()):
 
-    if sorter_clicked == True:
+    if sorter_var.get() == True:
         ttk.Label(frame, text=f"{cell} Cells per mL").grid(row=idx+1, column=0)
     else:
         ttk.Label(frame, text=f"{cell} number in 4 squares").grid(row=idx+1, column=0)
-        print(sorter_clicked)
+       
 
     entries[cell] = ttk.Entry(frame)
     entries[cell].grid(row=idx+1, column=1)
