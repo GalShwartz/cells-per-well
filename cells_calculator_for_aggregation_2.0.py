@@ -45,31 +45,85 @@ def calculate(tab_id):
         selected_cell_types = tabs_data[tab_id]['cell_type_var'].get()
         selected_ratio = CELL_RATIOS[selected_cell_types]
         sorter_used = tabs_data[tab_id]['sorter_var'].get()
+        
+        # Get user input for cell counts
         cells_counts = {cell: float(tabs_data[tab_id]['entries'][cell].get()) for cell in selected_ratio.keys()} if sorter_used else {cell: int(tabs_data[tab_id]['entries'][cell].get()) for cell in selected_ratio.keys()}
+        
+        # Get additional parameters
         dilution = float(tabs_data[tab_id]['dilution_entry'].get())
         total_cells_per_uwell = float(tabs_data[tab_id]['total_cells_per_uwell_entry'].get())
         uwell_per_well = float(tabs_data[tab_id]['uwell_per_well_entry'].get())
         num_of_wells = int(tabs_data[tab_id]['num_of_wells_entry'].get())
         volume_per_well = float(tabs_data[tab_id]['volume_per_well_entry'].get())
+
+        # Perform calculations
         volumes, media_vol, roki_vol, total_vol = cells_calculation(
             cells_counts, dilution, total_cells_per_uwell, uwell_per_well, selected_ratio, num_of_wells, volume_per_well, sorter_used
         )
-        tabs_data[tab_id]['result_text'].set(f"Volume to add (µL): {volumes}\nMedia Volume: {media_vol:.2f} µL\nROCKi Volume: {roki_vol:.2f} µL\nTotal Volume: {total_vol:.2f} µL")
+
+        # 🔥 Store the calculated results in `tabs_data`
+        tabs_data[tab_id]["calculated_volumes"] = volumes
+        tabs_data[tab_id]["media_volume"] = media_vol
+        tabs_data[tab_id]["roki_volume"] = roki_vol
+        tabs_data[tab_id]["total_volume"] = total_vol
+
+        # Update the results in the UI
+        tabs_data[tab_id]['result_text'].set(
+            f"Volume to add (µL): {volumes}\n"
+            f"Media Volume: {media_vol:.2f} µL\n"
+            f"ROCKi Volume: {roki_vol:.2f} µL\n"
+            f"Total Volume: {total_vol:.2f} µL"
+        )
+
     except ValueError:
         messagebox.showerror("Input Error", "Please enter valid numbers for all fields.")
 
-def export_to_csv():
+def export_to_excel():
     try:
-        filepath = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        experiment_name = experiment_name_entry.get().strip()
+        if not experiment_name:
+            messagebox.showerror("Export Error", "Please enter an experiment name.")
+            return
+        
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            initialfile=f"{experiment_name}_results",
+            filetypes=[("Excel files", "*.xlsx")]
+        )
         if not filepath:
             return
+
         data = []
-        for tab_id, data_dict in tabs_data.items():
-            for cell, entry in data_dict['entries'].items():
-                data.append([tab_id + 1, cell, entry.get()])
-        df = pd.DataFrame(data, columns=["Condition", "Cell Type", "Volume (µL)"])
-        df.to_csv(filepath, index=False)
-        messagebox.showinfo("Export Successful", "Results exported to CSV successfully.")
+        for tab_id, tab_data in tabs_data.items():
+            condition_name = f"Condition {tab_id + 1}"
+            
+            # 🚀 Now using the **calculated volumes** instead of missing variable
+            for cell, volume in tab_data["calculated_volumes"].items():
+                data.append([
+                    condition_name,
+                    cell,
+                    volume,  # Volume from calculations
+                    tab_data["media_volume"],
+                    tab_data["roki_volume"],
+                    tab_data["total_volume"]
+                ])
+        
+        # Create DataFrame
+        df = pd.DataFrame(data, columns=["Condition", "Cell Type", "Volume (µL)", "Media Volume (µL)", "ROCKi Volume (µL)", "Total Volume (µL)"])
+        
+        # Save to Excel
+        df.to_excel(filepath, index=False)
+        messagebox.showinfo("Export Successful", "Results exported to Excel successfully.")
+    
+    except Exception as e:
+        messagebox.showerror("Export Error", f"An error occurred: {e}")
+        
+        # Create DataFrame
+        df = pd.DataFrame(data, columns=["Condition", "Cell Type", "Volume (µL)", "Media Volume (µL)", "ROCKi Volume (µL)", "Total Volume (µL)"])
+        
+        # Save to Excel
+        df.to_excel(filepath, index=False)
+        messagebox.showinfo("Export Successful", "Results exported to Excel successfully.")
     except Exception as e:
         messagebox.showerror("Export Error", f"An error occurred: {e}")
 
@@ -122,7 +176,7 @@ def create_main_gui(parent, tab_id):
     sorter_check.grid(row=idx+7, columnspan=2)
 
     ttk.Button(frame, text="Calculate", command=lambda: calculate(tab_id)).grid(row=idx+8, columnspan=2, pady=10)
-    ttk.Button(frame, text="Export to CSV", command=export_to_csv).grid(row=idx+9, columnspan=2, pady=5)
+    ttk.Button(frame, text="Export to CSV", command=export_to_excel).grid(row=idx+9, columnspan=2, pady=5)
 
     result_label = ttk.Label(frame, textvariable=tabs_data[tab_id]['result_text'], font=("Arial", 10), wraplength=450)
     result_label.grid(row=idx+10, columnspan=2, pady=10)
