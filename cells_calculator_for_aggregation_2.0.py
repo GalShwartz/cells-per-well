@@ -5,9 +5,9 @@ import pandas as pd
 # Predefined cell ratios
 CELL_RATIOS = {
     "WT, RCL, BAP(J)": {"WT": 0.1925, "RCL": 0.1925, "BAP(J)": 0.615},
-    "WT, RCL, BAP(J), iTEAD4": {"WT": 0.1925, "RCL": 0.1925, "BAP(J)": 0.3075, "iTEAD4": 0.3075},
-    "WT, RCL, BAP(J), Rapamycin": {"WT": 0.1925, "RCL": 0.09625, "BAP(J)": 0.615, "Rapamycin": 0.09625},
-    "WT, RCL, BAP(J), iTEAD4, Rapamycin": {"WT": 0.1925, "RCL": 0.09625, "BAP(J)": 0.3075, "iTEAD4": 0.3075, "Rapamycin": 0.09625}
+    "WT, RCL, BAP(J), TE 2": {"WT": 0.1925, "RCL": 0.1925, "BAP(J)": 0.3075, "TE 2": 0.3075},
+    "WT, RCL, BAP(J), PrE 2": {"WT": 0.1925, "RCL": 0.09625, "BAP(J)": 0.615, "PrE 2": 0.09625},
+    "WT, RCL, BAP(J), TE 2, PrE 2": {"WT": 0.1925, "RCL": 0.09625, "BAP(J)": 0.3075, "TE 2": 0.3075, "PrE 2": 0.09625}
 }
 
 # Store tab-specific variables
@@ -107,7 +107,9 @@ def export_to_excel():
                     tab_data["roki_volume"],
                     tab_data["total_volume"]
                 ])
-        
+
+            data.append(["", "", "", "", "", ""])
+
         # Create DataFrame
         df = pd.DataFrame(data, columns=["Condition", "Cell Type", "Volume (µL)", "Media Volume (µL)", "ROCKi Volume (µL)", "Total Volume (µL)"])
         
@@ -156,7 +158,7 @@ def create_main_gui(parent, tab_id):
     cell_type_menu.grid(row=0, column=1)
     cell_type_menu.bind("<<ComboboxSelected>>", lambda e: update_entries(tab_id))
     
-    for idx, cell in enumerate(CELL_RATIOS["WT, RCL, BAP(J), iTEAD4, Rapamycin"].keys()):
+    for idx, cell in enumerate(CELL_RATIOS["WT, RCL, BAP(J), TE 2, PrE 2"].keys()):
         tabs_data[tab_id]['entry_labels'][cell] = ttk.Label(frame, text=f"{cell} number in 4 squares")
         tabs_data[tab_id]['entry_labels'][cell].grid(row=idx+1, column=0)
         tabs_data[tab_id]['entries'][cell] = ttk.Entry(frame)
@@ -172,7 +174,7 @@ def create_main_gui(parent, tab_id):
         tabs_data[tab_id][param_vars[i]].grid(row=idx+2+i, column=1)
         tabs_data[tab_id][param_vars[i]].insert(0, default_values[param])
 
-    sorter_check = ttk.Checkbutton(frame, text="Used Cell Sorter?", variable=tabs_data[tab_id]['sorter_var'], command=lambda: update_entries(tab_id))
+    sorter_check = ttk.Checkbutton(frame, text="Used Cell Counter?", variable=tabs_data[tab_id]['sorter_var'], command=lambda: update_entries(tab_id))
     sorter_check.grid(row=idx+7, columnspan=2)
 
     ttk.Button(frame, text="Calculate", command=lambda: calculate(tab_id)).grid(row=idx+8, columnspan=2, pady=10)
